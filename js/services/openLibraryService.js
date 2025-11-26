@@ -1,3 +1,6 @@
+
+import { Book } from "../models/Book.js";
+
 // ======================================================
 //  URL base de la API de Open Library
 // ======================================================
@@ -13,7 +16,9 @@ const COVERS_URL = "https://covers.openlibrary.org";
 export async function fetchBooksBySubject(categoria, limite = 50, offset = 0) {
     const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}&offset=${offset}`;
 
-    return await fetchJson(url);
+    const json = await fetchJson(url);
+
+    return json.works.map((work) => mapToBook(work));
 }
 
 // ======================================================
@@ -23,7 +28,9 @@ export async function fetchBooksBySubject(categoria, limite = 50, offset = 0) {
 export async function searchBooks(frase, limite = 50) {
     const url = `${BASE_URL}/search.json?title=${encodeURIComponent(frase)}&limit=${limite}`;
 
-    return await fetchJson(url);
+    const json = await fetchJson(url);
+
+    return json.works.map((work) => mapToBook(work));
 }
 
 // ======================================================
@@ -33,7 +40,9 @@ export async function searchBooks(frase, limite = 50) {
 export async function fetchBookById(workId) {
     const url = `${BASE_URL}${workId}.json`;
 
-    return await fetchJson(url);
+    const data = await fetchJson(url);
+
+    return mapToBook(data);
 }
 
 // ======================================================
@@ -68,4 +77,20 @@ async function fetchJson(url) {
         throw new Error(`Error al obtener datos desde: ${url}`);
     }
     return await response.json();
+}
+
+// ======================================================
+// Función mapeo de datos a Book
+// ======================================================
+
+export function mapToBook(data) {
+    return new Book(
+        data.key,
+        data.title,
+        data.authors?.[0]?.name || "Autor desconocido",
+        data.covers?.length
+        ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`
+        : "./img/no-cover.png",
+        data.subjects || []
+    );
 }
