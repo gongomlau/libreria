@@ -1,79 +1,71 @@
 // ======================================================
-// 1. URL base de la API de Open Library
+//  URL base de la API de Open Library
 // ======================================================
 
 const BASE_URL = "https://openlibrary.org";
 const COVERS_URL = "https://covers.openlibrary.org";
 
-// ======================================================
-// 2. Constante que relaciona edades con subjects
-// ======================================================
-
-const AGE_SUBJECTS = {
-    "0-6": ["picture_books", "children_stories"],
-    "6-8": ["children", "children_fiction"],
-    "8-12": ["juvenile_fiction", "juvenile_literature"],
-    "12-17": ["young_adult", "young_adult_fiction"],
-};
 
 // ======================================================
-// 3. Construir la URL generica para la categoría pasada por parametro
+// Obtener libros por categoría
 // ======================================================
 
-function buildUrlBySubject(subject, limit = 50) {
-    return `${BASE_URL}/subjects/${subject}.json?limit=${limit}`;
+export async function fetchBooksBySubject(categoria, limite = 50, offset = 0) {
+    const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}&offset=${offset}`;
+
+    return await fetchJson(url);
 }
 
 // ======================================================
-// 4. Función genérica que hace la petición a Open Library
+// Buscar libros por titulo
 // ======================================================
 
-async function fetchBooksBySubject(subject, limit = 50) {
-    const url = buildUrlBySubject(subject, limit);
+export async function searchBooks(frase, limite = 50) {
+    const url = `${BASE_URL}/search.json?title=${encodeURIComponent(frase)}&limit=${limite}`;
 
+    return await fetchJson(url);
+}
+
+// ======================================================
+// Obtener información detallada de un libro según su ID (work ID)
+// ======================================================
+
+export async function fetchBookById(workId) {
+    const url = `${BASE_URL}${workId}.json`;
+
+    return await fetchJson(url);
+}
+
+// ======================================================
+// Obtener información del autor
+// ======================================================
+
+export async function fetchAuthor(authorId) {
+    const url = `${BASE_URL}${authorId}.json`;
+
+    return await fetchJson(url);
+}
+// ======================================================
+// Obtener portada (tamaño: S, M, L)
+// Si no hay portada, puede devolverte una imagen por defecto
+// ======================================================
+
+export function getCoverImage(coverId, size) {
+    if (!coverId) {
+    return "./assets/default-cover.jpg"; // opcional
+    }
+
+    return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
+}
+
+// ======================================================
+// Función fetch genérica
+// ======================================================
+
+async function fetchJson(url) {
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(
-            `Error al obtener datos de Open Library: ${response.status}`
-        );
+        throw new Error(`Error al obtener datos desde: ${url}`);
     }
-
-    const data = await response.json();
-    return data.works || [];
-}
-
-// ======================================================
-// 5. Función principal: obtener libros según la edad
-// ======================================================
-
-export async function getBooksByAge(ageRange, limit = 50) {
-    const subjects = AGE_SUBJECTS[ageRange];
-
-    if (!subjects) {
-        throw new Error(`No hay subjects definidos para la edad: ${ageRange}`);
-    }
-
-    // Hacemos fetch de todos los subjects asociados a esa edad
-    const results = await Promise.all(
-        subjects.map((subject) => fetchBooksBySubject(subject, limit))
-    );
-
-    // Unir todos los resultados en un solo array
-    const books = results.flat();
-
-    return books;
-}
-
-// ======================================================
-// 6. Función opcional: obtener *todos* los libros de todas las edades
-// ======================================================
-
-export async function getAllYouthBooks(limit = 50) {
-    const allAges = Object.keys(AGE_SUBJECTS);
-
-    const results = await Promise.all(
-        allAges.map((age) => getBooksByAge(age, limit))
-    );
-
-    return results.flat();
+    return await response.json();
 }
