@@ -22,83 +22,106 @@ async function fetchJson(url) {
 }
 
 // ======================================================
-// Utilidad para recoger la portada
+// Obtener portada (tamaño: S, M, L)
+// Si no hay portada, puede devolverte una imagen por defecto
 // ======================================================
 
 export function getCover(coverId, size) {
-  if (!coverId) {
-    return "./assets/default-cover.jpg"; // opcional
-  }
+    if (!coverId) {
+        return "./img/default-cover.jpg"; // Ruta a una imagen por defecto
+    }
 
-  return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
-}
-
-// ======================================================
-// Transformar Work a Book
-// ======================================================
-
-export function mapToBook(data) {
-    return new Book({
-        id: data.key,
-        title: data.title || "Título desconocido",
-        author: data.authors?.[0]?.name || "Autor desconocido",
-        subjects: data.subjects || [],
-        coverSmall: data.covers
-            ? getCover(data.covers[0], "S")
-            : "./img/default-cover.jpg",
-        coverLarge: data.covers
-            ? getCover(data.covers[0], "L")
-            : "./img/default-cover.jpg",
-    });
-}
+    return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
+    }
 
 // ======================================================
 // Obtener libros por categoría
 // ======================================================
 
-export async function fetchBooksBySubject(categoria, limite = 20, offset = 0) {
+export async function fetchBooksBySubject(categoria, limite = 5, offset = 0) {
     const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}&offset=${offset}`;
 
     const json = await fetchJson(url);
 
-    return json.works.map(mapToBook);
-}
-
-// ======================================================
-// Buscar libros por titulo
-// ======================================================
-
-export async function searchBooks(frase, limite = 20) {
-    const url = `${BASE_URL}/search.json?title=${encodeURIComponent(frase)}&limit=${limite}`;
-
-    const json = await fetchJson(url);
-
-    return json.works.map(mapToBook);
+    return json.works;
 }
 
 // ======================================================
 // Obtener información detallada de un libro según su ID (work ID)
 // ======================================================
 
-export async function fetchBookById(workId) {
-    const url = `${BASE_URL}${workId}.json`;
-
-    const data = await fetchJson(url);
-
-    return mapToBook(data);
-}
-
-// ======================================================
-// Obtener información del autor
-// ======================================================
-
-export async function fetchAuthor(authorId) {
-    const url = `${BASE_URL}${authorId}.json`;
+export async function fetchWork(workId) {
+    const cleanId = workId.replace("/works/", "");
+    const url = `${BASE_URL}/works/${cleanId}.json`;
 
     return await fetchJson(url);
 }
+
 // ======================================================
-// Obtener portada (tamaño: S, M, L)
-// Si no hay portada, puede devolverte una imagen por defecto
+// Ediciones de un libro (work ID)
 // ======================================================
+
+export async function fetchWorkEditions(workId, limit = 5) {
+    const cleanId = workId.replace("/works/", "");
+    const url = `${BASE_URL}/works/${cleanId}/editions.json?limit=${limit}`;
+    const data = await fetchJson(url);
+    return data.entries;
+}
+
+// ======================================================
+// Transformar Work a Book
+// ======================================================
+
+export function mapToBook(work, editions = []) {
+    if (!work) return null;
+
+    // 1. Elegir mejor edición (español → fallback a primera)
+    const best = editions.find(ed => 
+        ed.languages?.some(l => l.key === "/languages/spa")
+    ) || editions[0];
+
+    // 2. ID real del work
+    const id = work.key.replace("/works/", "");
+
+    // 3. Título
+    const title = best?.title || work.title || "Título desconocido";
+
+    // 4. Autor
+    const author =
+        best?.authors?.[0]?.name ||
+        work?.authors?.[0]?.name ||
+        "Autor desconocido";
+
+    // 5. Descripción
+    const description =
+        (typeof best?.description === "string" ? best.description : best?.description?.value) ||
+        (typeof work.description === "string" ? work.description : work?.description?.value) ||
+        null;
+
+    // 6. Portadas
+    const coverId = best?.covers?.[0] || work.covers?.[0] || null;
+    const coverSmall = coverId ? getCover(coverId, "S") : null;
+    const coverLarge = coverId ? getCover(coverId, "L") : null;
+
+    // 7. Idioma
+    const language = best?.languages?.[0]?.key || null;
+
+    // 8. Nº de páginas (si existe)
+    const pageCount =
+        best?.number_of_pages ||
+        best?.pagination ||
+        null;
+
+    return new Book({
+        id,
+        title,
+        author,
+        subjects: work.subjects || [],
+        coverSmall,
+        coverLarge,
+        language,
+        description,
+        pageCount
+    });
+}
 
