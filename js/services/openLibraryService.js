@@ -10,27 +10,70 @@ const COVERS_URL = "https://covers.openlibrary.org";
 
 
 // ======================================================
+// Función fetch genérica
+// ======================================================
+
+async function fetchJson(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Error al obtener datos desde: ${url}`);
+    }
+    return await response.json();
+}
+
+// ======================================================
+// Utilidad para recoger la portada
+// ======================================================
+
+export function getCover(coverId, size) {
+  if (!coverId) {
+    return "./assets/default-cover.jpg"; // opcional
+  }
+
+  return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
+}
+
+// ======================================================
+// Transformar Work a Book
+// ======================================================
+
+export function mapToBook(data) {
+    return new Book({
+        id: data.key,
+        title: data.title || "Título desconocido",
+        author: data.authors?.[0]?.name || "Autor desconocido",
+        subjects: data.subjects || [],
+        coverSmall: data.covers
+            ? getCover(data.covers[0], "S")
+            : "./img/default-cover.jpg",
+        coverLarge: data.covers
+            ? getCover(data.covers[0], "L")
+            : "./img/default-cover.jpg",
+    });
+}
+
+// ======================================================
 // Obtener libros por categoría
 // ======================================================
 
-export async function fetchBooksBySubject(categoria, limite = 50, offset = 0) {
+export async function fetchBooksBySubject(categoria, limite = 20, offset = 0) {
     const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}&offset=${offset}`;
 
     const json = await fetchJson(url);
 
-    return json.works.map((work) => mapToBook(work));
+    return json.works.map(mapToBook);
 }
 
 // ======================================================
 // Buscar libros por titulo
 // ======================================================
 
-export async function searchBooks(frase, limite = 50) {
+export async function searchBooks(frase, limite = 20) {
     const url = `${BASE_URL}/search.json?title=${encodeURIComponent(frase)}&limit=${limite}`;
 
     const json = await fetchJson(url);
 
-    return json.works.map((work) => mapToBook(work));
+    return json.works.map(mapToBook);
 }
 
 // ======================================================
@@ -59,38 +102,3 @@ export async function fetchAuthor(authorId) {
 // Si no hay portada, puede devolverte una imagen por defecto
 // ======================================================
 
-export function getCoverImage(coverId, size) {
-    if (!coverId) {
-    return "./assets/default-cover.jpg"; // opcional
-    }
-
-    return `${COVERS_URL}/b/id/${coverId}-${size}.jpg`;
-}
-
-// ======================================================
-// Función fetch genérica
-// ======================================================
-
-async function fetchJson(url) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Error al obtener datos desde: ${url}`);
-    }
-    return await response.json();
-}
-
-// ======================================================
-// Función mapeo de datos a Book
-// ======================================================
-
-export function mapToBook(data) {
-    return new Book(
-        data.key,
-        data.title,
-        data.authors?.[0]?.name || "Autor desconocido",
-        data.covers?.length
-        ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`
-        : "./img/no-cover.png",
-        data.subjects || []
-    );
-}
