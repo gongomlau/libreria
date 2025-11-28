@@ -22,51 +22,53 @@ export class InterfaceService {
   // ======================================================
 
   async loadInitialBooks() {
-    const allBooks = [];
+    try {
+      // 1. Definir único subject
+      const subject = "children";
 
-    // 1. Obtener array plano de subjects
-    const subjects = AGE_RANGES.flatMap((range) => range.subjects);
+      // 2. Obtener works del subject
+      const works = await fetchBooksBySubject(subject, 10, 0);
 
-    // 2. Obtener works de TODOS los subjects en paralelo
-    const worksArrays = await Promise.all(
-      subjects.map((sub) => fetchBooksBySubject(sub, 5))
-    );
+      // 3. Para cada work, cargar datos + ediciones EN PARALELO
+      const bookPromises = works.map(async (work) => {
+        try {
+          const workId = work.key.replace("/works/", "");
 
-    // 3. Aplanar array final de works
-    const allWorks = worksArrays.flat();
+          const [workData, editionsData] = await Promise.all([
+            fetchWork(workId),
+            fetchWorkEditions(workId),
+          ]);
 
-    // 4. Para cada work, cargar datos + ediciones EN PARALELO
-    const bookPromises = allWorks.map(async (work) => {
-      try {
-        const workId = work.key.replace("/works/", "");
+          return mapToBook(workData, editionsData);
+        } catch (err) {
+          console.warn("Error procesando work:", work.key, err);
+          return null;
+        }
+      });
 
-        const [workData, editionsData] = await Promise.all([
-          fetchWork(workId),
-          fetchWorkEditions(workId),
-        ]);
+      // 4. Esperar a que todos los libros se procesen
+      const results = await Promise.all(bookPromises);
+      
 
-        return mapToBook(workData, editionsData);
-      } catch (err) {
-        console.warn("Error procesando work:", work.key, err);
-        return null;
-      }
-    });
+      // 5. Filtrar errores y además SOLO libros con edición en español
+      this.currentBooks = results.filter(
+        (b) => b !== null && b.language === "/languages/spa"
+      );
 
-    // 5. Esperar a que todos los libros se procesen
-    const results = await Promise.all(bookPromises);
+      console.log("Libros cargados:", this.currentBooks);
+      // 6. Render final
+      this.renderBooks();
 
-    // 6. Filtrar errores y además SOLO libros con edición en español
-    this.currentBooks = results.filter((b) => b !== null && b.spanish);
-
-    // 7. Render final
-    this.renderBooks();
+    } catch (error) {
+      console.error("Error en loadInitialBooks:", error);
+    }
   }
 
   // ======================================================
   // 📘 Mostrar listado de libros
   // ======================================================
 
-  renderBooks() {
+  async renderBooks() {
     renderBookList("app", this.currentBooks);
   }
 

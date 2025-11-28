@@ -61,7 +61,7 @@ export async function fetchWork(workId) {
 // Ediciones de un libro (work ID)
 // ======================================================
 
-export async function fetchWorkEditions(workId, limit = 5) {
+export async function fetchWorkEditions(workId, limit = 200) {
     const cleanId = workId.replace("/works/", "");
     const url = `${BASE_URL}/works/${cleanId}/editions.json?limit=${limit}`;
     const data = await fetchJson(url);
@@ -87,10 +87,7 @@ export function mapToBook(work, editions = []) {
     const title = best?.title || work.title || "Título desconocido";
 
     // 4. Autor
-    const author =
-        best?.authors?.[0]?.name ||
-        work?.authors?.[0]?.name ||
-        "Autor desconocido";
+    const author = best?.author.name || work?.author.name || "Autor desconocido";
 
     // 5. Descripción
     const description =
@@ -100,7 +97,7 @@ export function mapToBook(work, editions = []) {
 
     // 6. Portadas
     const coverId = best?.covers?.[0] || work.covers?.[0] || null;
-    const coverSmall = coverId ? getCover(coverId, "S") : null;
+    const coverSmall = coverId ? getCover(coverId, "M") : null;
     const coverLarge = coverId ? getCover(coverId, "L") : null;
 
     // 7. Idioma
@@ -124,4 +121,5 @@ export function mapToBook(work, editions = []) {
         pageCount
     });
 }
+
 

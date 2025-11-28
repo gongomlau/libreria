@@ -16,8 +16,12 @@ export function bookCardComponent(book) {
 // --- Lista de libros ---
 // ======================================================
 
-export function renderBookList(containerId, books) {
+export function renderBookList(app, books) {
   const div = document.getElementById(app);
+  if (!div) {
+    console.error(`No se encontró el contenedor con id="${app}"`);
+    return;
+  }
   div.innerHTML = books.map(bookCardComponent).join("");
 }
 
@@ -25,7 +29,7 @@ export function renderBookList(containerId, books) {
 // --- Detalle de libro ---
 // ======================================================
 
-export function renderBookDetail(containerId, book) {
+export function renderBookDetail(app, book) {
   const div = document.getElementById(app);
   div.innerHTML = `
         <div class="book-detail">
