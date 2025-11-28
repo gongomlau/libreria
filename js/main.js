@@ -1,7 +1,25 @@
-import { InterfaceService } from "./services/interfaceService.js";
+import { getBooks } from "./services/interfaceService.js";
+import {
+  renderBookList,
+  renderBookDetail,
+} from "./utilities/viewComponents.js";
 
-const ui = new InterfaceService();
+async function main() {
+  try {
+    const books = await getBooks("juvenile");
+    renderBookList("app", books);
 
-ui.loadInitialBooks().then(() => {
-  ui.renderBooks();
-});
+    document.getElementById("app").addEventListener("click", (e) => {
+      const card = e.target.closest(".book-card");
+      if (card) {
+        const bookId = card.dataset.id;
+        const book = books.find((b) => b.id === bookId);
+        renderBookDetail("app", book);
+      }
+    });
+  } catch (err) {
+    console.error("Error en main:", err);
+  }
+}
+
+main();
