@@ -11,12 +11,15 @@ body {
     color: #fff;
     /* Texto base en blanco */
 }
-
+main{
+    justify-content: center;
+}
 #app {
+    width: 80%;
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 /* ======================================================

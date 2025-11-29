@@ -1,173 +1,97 @@
 import { Book } from "../models/book.js";
-import { COVERS_URL, BASE_URL } from "../config.js";
-import {
-  fetchBooksBySubject,
-  fetchWork,
-  fetchWorkEditions,
-  fetchAuthor,
-  getCover,
-} from "./openLibraryService.js";
+import { renderBookDetail, renderBookList } from "../utilities/viewComponents.js";
+import { AGE_RANGES } from "../data/rangoEdad.js"
+import { fetchBooksBySubject, fetchWorkEditions, getCover } from "./openLibraryService.js";
 
-// ======================================================
-// Transformar Work a Book
-// ======================================================
-
-async function mapToBook(work) {
-    if (!work) return null;
-    // ID del work
-    const workId = work.key.split("/").pop();
-
-    // Cargar ediciones y autor en paralelo
-    const editionsPromise = fetchWorkEditions(workId);
-    const authorPromise = work.authors?.length
-      ? fetchAuthor(work.authors[0].key)
-      : Promise.resolve("Desconocido");
-    const workPromise = fetchWork(workId);
-
-    const [editions, authorName, workData] = await Promise.all([
-      editionsPromise,
-      authorPromise,
-      workPromise,
-    ]);
-    // Filtrar ediciones en español  
-    const spanishEdition = editions.find(ed =>
-      ed.languages?.some(lang => lang.key === "/languages/spa")
-    );
-    if (!spanishEdition) return null;
-    
-    const coverId = spanishEdition.covers?.[0];
-    
-    return new Book({
-      id: workId,
-      title: spanishEdition.title,
-      author: authorName,
-      subjects: work.subject ? work.subject.slice(0, 5) : [],
-      language: "Spanish",
-      coverSmall: coverId ? getCover(coverId, "M") : null,
-      coverLarge: coverId ? getCover(coverId, "L") : null,
-
-      description: workData.description?.value || workData.description || null,
-      pageCount: spanishEdition.pageCount,
-    });
-}
-
-
-export async function getBooks(subject) {
-  const works = await fetchBooksBySubject(subject);
-  const books = await Promise.all(works.map(mapToBook));
-  return books.filter(b => b !== null);
-}
-/*
-    // 1. Elegir mejor edición (español → fallback a primera)
-    const best = editions.find(ed => 
+// ----------------------------------------------------------
+// Elegir la mejor edición (preferencia español)
+// ----------------------------------------------------------
+function getBestEdition(editions) {
+    if (!editions.length) return null;
+    const spanish = editions.find(ed =>
         ed.languages?.some(l => l.key === "/languages/spa")
-    ) || editions[0];
+    );
+    return spanish || editions[0];
+}
 
-    // 2. ID real del work
-    const id = work.key.replace("/works/", "");
+// ----------------------------------------------------------
+// Convertir Work + Edition → Book
+// ----------------------------------------------------------
+function mapToBook(work, edition) {
+    const coverId = edition?.covers?.[0] || work.covers?.[0] || null;
 
-    // 3. Título
-    const title = best?.title || work.title || "Título desconocido";
+    const subjects = work.subjects ?? [];
 
-    // 4. Autor
-    const author = best?.author.name || work?.author.name || "Autor desconocido";
-
-    // 5. Descripción
-    const description =
-        (typeof best?.description === "string" ? best.description : best?.description?.value) ||
-        (typeof work.description === "string" ? work.description : work?.description?.value) ||
-        null;
-
-    // 6. Portadas
-    const coverId = best?.covers?.[0] || work.covers?.[0] || null;
-    const coverSmall = coverId ? getCover(coverId, "M") : null;
-    const coverLarge = coverId ? getCover(coverId, "L") : null;
-
-    // 7. Idioma
-    const language = best?.languages?.[0]?.key || null;
-
-    // 8. Nº de páginas (si existe)
-    const pageCount =
-        best?.number_of_pages ||
-        best?.pagination ||
-        null;
+    const ageRanges = getAgeRangesFromSubjects(subjects);
 
     return new Book({
-        id,
-        title,
-        author,
-        subjects: work.subjects || [],
-        coverSmall,
-        coverLarge,
-        language,
-        description,
-        pageCount
+        id: work.key.replace("/works/", ""),
+        title: edition?.title || work.title,
+        author: work?.authors?.[0]?.name || "Autor desconocido",
+        coverSmall: getCover(coverId, "M"),
+        coverLarge: getCover(coverId, "L"),
+        description:
+            edition?.description?.value ||
+            edition?.description ||
+            work.description?.value ||
+            null,
+        language: edition?.languages?.[0]?.key?.replace("/languages/", ""),
+        pages: edition?.number_of_pages || null,
+        subjects: work.subjects ?? [],
+        ageRanges,
     });
 }
 
-  // ======================================================
-  // ⚡ CARGA INICIAL DE LIBROS (usa Promise.all → VA 4× MÁS RÁPIDO)
-  // ======================================================
+// ----------------------------------------------------------
+// Rango de edad
+// ----------------------------------------------------------
 
-  async loadInitialBooks() {
-    try {
-      // 1. Definir único subject
-      const subject = "children";
+export function getAgeRangesFromSubjects(subjects) {
+  const result = [];
 
-      // 2. Obtener works del subject
-      const works = await fetchBooksBySubject(subject, 10, 0);
-
-      // 3. Para cada work, cargar datos + ediciones EN PARALELO
-      const bookPromises = works.map(async (work) => {
-        try {
-          const workId = work.key.replace("/works/", "");
-
-          const [workData, editionsData] = await Promise.all([
-            fetchWork(workId),
-            fetchWorkEditions(workId),
-          ]);
-
-          return mapToBook(workData, editionsData);
-        } catch (err) {
-          console.warn("Error procesando work:", work.key, err);
-          return null;
-        }
+  for (const range of AGE_RANGES) {
+    if (range.subjects.some((s) => subjects.includes(s))) {
+      result.push({
+        id: range.id,
+        label: range.label,
+        color: range.color,
       });
-
-      // 4. Esperar a que todos los libros se procesen
-      const results = await Promise.all(bookPromises);
-      
-
-      // 5. Filtrar errores y además SOLO libros con edición en español
-      this.currentBooks = results.filter(
-        (b) => b !== null && b.language === "/languages/spa"
-      );
-
-      console.log("Libros cargados:", this.currentBooks);
-      // 6. Render final
-      this.renderBooks();
-
-    } catch (error) {
-      console.error("Error en loadInitialBooks:", error);
     }
   }
 
-  // ======================================================
-  // 📘 Mostrar listado de libros
-  // ======================================================
+  return result;
+}
+export class InterfaceService {
+    constructor() {
+        this.containerId = "app";
+        this.currentBooks = [];
+    }
+  
+    // ----------------------------------------------------------
+    // CARGA INICIAL
+    // ----------------------------------------------------------
+    async loadInitialBooks() {
+            const allSubjects = AGE_RANGES.flatMap(r => r.subjects);
+            const allBooks = [];
 
-  async renderBooks() {
-    renderBookList("app", this.currentBooks);
-  }
+            for (const subject of allSubjects) {
+                const works = await fetchBooksBySubject(subject, 10);
 
-  // ======================================================
-  // 📖 Mostrar detalle de un libro
-  // ======================================================
+                for (const work of works) {
+                    const editions = await fetchWorkEditions(work.key);
+                    const bestEdition = getBestEdition(editions);
+                    const book = mapToBook(work, bestEdition);
+                    allBooks.push(book);
+                }
+            }
 
-  async showBookDetail(workKey) {
-    const book = this.currentBooks.find((b) => b.key === workKey);
-    if (!book) return;
+            this.currentBooks = allBooks;
+            renderBookList(this.containerId, allBooks);
+    }
 
-    renderBookDetail("app", book);
-  }
-}*/
+    showBookDetail(id) {
+        const book = this.currentBooks.find(b => b.id === id);
+        if (!book) return;
+        renderBookDetail(this.containerId, book);
+    }
+}

@@ -3,11 +3,23 @@
 // ======================================================
 
 export function bookCardComponent(book) {
+
   return `
         <div class="book-card" data-id="${book.id}">
             <img src="${book.coverSmall}">
             <h3>${book.title}</h3>
             <p>${book.author}</p>
+          <div class="age-tags">
+            ${
+              book.ageRanges.length > 0
+                ? book.ageRanges
+                    .map(
+                      (r) => `<span class="age-tag ${r.color}">${r.id}</span>`
+                    )
+                    .join("")
+                : `<span class="age-tag none">N/A</span>`
+            }
+        </div>
         </div>
     `;
 }

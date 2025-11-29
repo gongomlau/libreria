@@ -1,25 +1,16 @@
-import { getBooks } from "./services/interfaceService.js";
-import {
-  renderBookList,
-  renderBookDetail,
-} from "./utilities/viewComponents.js";
+import { InterfaceService } from "./services/interfaceService.js";
 
-async function main() {
-  try {
-    const books = await getBooks("juvenile");
-    renderBookList("app", books);
+document.addEventListener("DOMContentLoaded", async () => {
+  const ui = new InterfaceService();
 
-    document.getElementById("app").addEventListener("click", (e) => {
-      const card = e.target.closest(".book-card");
-      if (card) {
-        const bookId = card.dataset.id;
-        const book = books.find((b) => b.id === bookId);
-        renderBookDetail("app", book);
-      }
-    });
-  } catch (err) {
-    console.error("Error en main:", err);
-  }
-}
+  await ui.loadInitialBooks(); // Carga inicial
 
-main();
+  // Delegación de eventos para ver detalles
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest(".book-card");
+    if (!card) return;
+
+    const bookId = card.dataset.id;
+    ui.showBookDetail(bookId);
+  });
+});

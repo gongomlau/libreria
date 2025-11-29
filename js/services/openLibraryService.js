@@ -20,12 +20,12 @@ export function getCover(coverId, size) {
 // Obtener libros por categoría
 // ======================================================
 
-export async function fetchBooksBySubject(categoria, limite = 5, offset = 0) {
-    const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}&offset=${offset}`;
+export async function fetchBooksBySubject(categoria, limite = 10) {
+    const url = `${BASE_URL}/subjects/${categoria}.json?limit=${limite}`;
 
     const data = await fetchJson(url);
 
-    return data.works;
+    return data.works ?? [];
 }
 
 // ======================================================
@@ -43,11 +43,11 @@ export async function fetchWork(workId) {
 // Ediciones de un libro (work ID)
 // ======================================================
 
-export async function fetchWorkEditions(workId, limit = 200) {
+export async function fetchWorkEditions(workId, limit = 2) {
     const cleanId = workId.replace("/works/", "");
     const url = `${BASE_URL}/works/${cleanId}/editions.json?limit=${limit}`;
     const data = await fetchJson(url);
-    return data.entries;
+    return data.entries ?? [];
 }
 
 // ======================================================
