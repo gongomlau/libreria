@@ -6,13 +6,13 @@ import { AGE_RANGES } from "../data/rangoEdad.js";
 // Elegir la mejor edición (preferencia español)
 // ----------------------------------------------------------
 export function getBestEdition(editions) {
-  if (!editions.length) return null;
+    if (!editions.length) return null;
 
-  const spanish = editions.find((e) =>
-    e.languages?.some((l) => l.key === "/languages/spa")
-  );
+    const spanish = editions.find((e) =>
+      e.languages?.some((l) => l.key === "/languages/spa")
+    );
 
-  return spanish || editions[0];
+    return spanish || editions[0];
 }
 
 
