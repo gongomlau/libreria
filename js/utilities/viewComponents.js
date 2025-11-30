@@ -6,8 +6,8 @@ import { AGE_RANGES } from "../data/rangoEdad.js";
 function renderAgeTags(book) {
   return book.ageRanges
     .map((id) => {
-      const r = AGE_RANGES.find((a) => a.id === id);
-      return `<span class="age-tag age-${id}">${r.id}</span>`;
+      const range = AGE_RANGES.find((r) => r.id === id);
+      return `<span class="age-tag age-${id}">${range.label}</span>`;
     })
     .join("");
 }
@@ -18,10 +18,6 @@ function renderAgeTags(book) {
 // ======================================================
 
 export function bookCardComponent(book) {
-  const tags = book.ageRanges
-    .map((r) => `<span class="age-tag age-${r.replace("-", "")}">${r}</span>`)
-    .join("");
-
   return `
         <div class="book-card" data-id="${book.id}">
             <img src="${book.coverSmall}">

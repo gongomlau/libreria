@@ -34,6 +34,7 @@ main{
     width: 180px;
     padding: 10px;
     text-align: center;
+    align-content: space-between;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     color: #fff;
@@ -147,4 +148,17 @@ main{
 
 .age-12-17 {
     background: #FF9800;
+}
+
+#age-filter-menu {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#age-filter-menu .age-tag {
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
 }

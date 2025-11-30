@@ -7,6 +7,7 @@ export class InterfaceService {
   constructor() {
     this.container = document.getElementById("app");
     this.currentBooks = [];
+    this.renderAgeFilterMenu();
   }
 
   // ----------------------------------------------------------
@@ -24,12 +25,14 @@ export class InterfaceService {
           const editions = await fetchWorkEditions(w.key, 10);
           const bestEdition = getBestEdition(editions);
           // autor
-          const authorKey = bestEdition?.authors?.[0]?.key || workData.authors?.[0]?.author?.key;
+          const authorKey =
+            bestEdition?.authors?.[0]?.key ||
+            workData.authors?.[0]?.author?.key;
           const author = authorKey
             ? await fetchAuthor(authorKey)
             : "Autor desconocido";
           // mapear a book
-          const book = mapToBook(workData, editions, author, subject);
+          const book = mapToBook(workData, bestEdition, author, subject);
 
           // evitar duplicados
           if (!this.currentBooks.some((b) => b.id === book.id)) {
@@ -59,5 +62,30 @@ export class InterfaceService {
     if (!book) return;
 
     renderBookDetail("app", book);
+  }
+
+  //-----------------------------------------------------------
+  // MENU HEADER
+  //-----------------------------------------------------------
+  renderAgeFilterMenu() {
+    const nav = document.getElementById("age-filter-menu");
+
+    nav.innerHTML = AGE_RANGES.map(
+      (r) =>
+        `<span class="age-tag age-${r.id}" data-age="${r.id}">
+              ${r.label}
+          </span>`
+    ).join("");
+  }
+
+  filterByAge(ageId) {
+    const filtered = this.currentBooks.filter((b) =>
+      b.ageRanges.includes(ageId)
+    );
+    renderBookList("app", filtered);
+  }
+
+  showHome() {
+    renderBookList("app", this.currentBooks);
   }
 }
