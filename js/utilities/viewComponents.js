@@ -65,3 +65,78 @@ export function renderBookDetail(app, book) {
         </div>
     `;
 }
+
+// ======================================================
+// --- Menu de edades ---
+// ======================================================
+
+export function renderAgeFilterMenu(containerId) {
+  const nav = document.getElementById(containerId);
+  nav.innerHTML = AGE_RANGES.map(
+      (r) => `
+        <span class="age-tag age-${r.id}" data-age="${r.id}">
+            ${r.label}
+        </span>
+    `
+    )
+    .join("");
+}
+
+// ======================================================
+//   ESTADÍSTICAS TEXTO
+//   ======================================================
+export function renderStats(containerId, books, stats) {
+  const div = document.getElementById(containerId);
+  const total = books.length;
+
+  div.innerHTML = `
+        <p><strong>Total de libros mostrados:</strong> ${total}</p>
+            `;
+}
+
+// ======================================================
+//   GRÁFICO (CHART.JS)
+//   ====================================================== 
+let chartInstance = null;
+
+export function renderChart(canvasId, stats) {
+  const ctx = document.getElementById(canvasId);
+
+  if (chartInstance) chartInstance.destroy();
+  
+  // Colores según criterios (según tus clases CSS)
+  const colorMap = {
+    "0-6": "#ffffff",
+    "6-8": "#4CAF50",
+    "8-12": "#2196F3",
+    "12-17": "#FF9800",
+  };
+
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: stats.map((s) => s.label),
+      datasets: [
+        {
+          label: "Libros por rango de edad",
+          data: stats.map((s) => s.count),
+          backgroundColor: stats.map((s) => colorMap[s.id]),
+          borderColor: stats.map((s) => colorMap[s.id]),
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true },
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: "#fff", // texto de leyenda en blanco
+          },
+        },
+      },
+    },
+  });
+}

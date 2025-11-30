@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Delegación de eventos para ver detalles
   document.addEventListener("click", (e) => {
+    
     // 1) Si clicas en un filtro de edad (header o tags)
     const tag = e.target.closest(".age-tag");
     if (tag && tag.dataset.age) {

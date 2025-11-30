@@ -162,3 +162,32 @@ main{
     padding: 5px 10px;
     border-radius: 4px;
 }
+
+
+#chart-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    margin: 20px auto;
+}
+
+#top-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.home-button {
+    background: #f03eac;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin: 4px;
+    font-size: 12px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+}

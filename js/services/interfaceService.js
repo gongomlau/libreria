@@ -1,13 +1,14 @@
-import { renderBookDetail, renderBookList, bookCardComponent } from "../utilities/viewComponents.js";
+import { renderBookDetail, renderBookList, bookCardComponent,renderAgeFilterMenu,renderChart,renderStats } from "../utilities/viewComponents.js";
 import { AGE_RANGES } from "../data/rangoEdad.js"
 import { fetchBooksBySubject, fetchWorkEditions, fetchWork, fetchAuthor } from "./openLibraryService.js";
 import { getBestEdition, mapToBook,  } from "../mappers/mapToBook.js";
 
 export class InterfaceService {
   constructor() {
-    this.container = document.getElementById("app");
     this.currentBooks = [];
-    this.renderAgeFilterMenu();
+
+    // Render menú dinámico de edades
+    renderAgeFilterMenu("age-filter-menu",);
   }
 
   // ----------------------------------------------------------
@@ -44,6 +45,7 @@ export class InterfaceService {
         }
       }
     }
+    this.updateStatsView(this.currentBooks);
   }
 
   //-----------------------------------------------------------
@@ -57,35 +59,41 @@ export class InterfaceService {
   //-----------------------------------------------------------
   // MOSTRAR DETALLE DE LIBRO
   //-----------------------------------------------------------
-  async showBookDetail(id) {
+  showBookDetail(id) {
     const book = this.currentBooks.find((b) => b.id === id);
     if (!book) return;
 
     renderBookDetail("app", book);
   }
-
   //-----------------------------------------------------------
-  // MENU HEADER
+  // FLTRO POR EDAD
   //-----------------------------------------------------------
-  renderAgeFilterMenu() {
-    const nav = document.getElementById("age-filter-menu");
-
-    nav.innerHTML = AGE_RANGES.map(
-      (r) =>
-        `<span class="age-tag age-${r.id}" data-age="${r.id}">
-              ${r.label}
-          </span>`
-    ).join("");
-  }
-
   filterByAge(ageId) {
     const filtered = this.currentBooks.filter((b) =>
       b.ageRanges.includes(ageId)
     );
     renderBookList("app", filtered);
   }
-
+  //-----------------------------------------------------------
+  // VOLVER A INICIO
+  //-----------------------------------------------------------
   showHome() {
     renderBookList("app", this.currentBooks);
+    this.updateStasView(this.currentBooks);
+  }
+
+  //======================================================
+  //     ESTADÍSTICAS (TEXTO + GRÁFICO)
+  //======================================================
+  updateStatsView(bookList) {
+    const stats = AGE_RANGES.map((r) => ({
+      id: r.id,
+      label: r.label,
+      count: bookList.filter((b) => b.ageRanges.includes(r.id)).length,
+    }));
+
+    renderStats("stats", bookList, stats);
+
+    renderChart("ageChart", stats);
   }
 }

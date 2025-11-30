@@ -5,33 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liburutheka</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <!--Estadisticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- ========================================================= -->
     <!-- HEADER -->
     <!-- ========================================================= -->
     <header>
-        <img id="btn-home" src="/img/liburuthekatex.png" alt="Liburutheka">
-
-            <nav id="age-filter-menu">
-                <!-- Se rellena dinámicamente -->
-            </nav>
-
+        <img src="/img/liburuthekatex.png" alt="Liburutheka">
+        <div id="top-menu">
+            <button id="btn-home" class="home-button">Inicio</button>
+            <nav id="age-filter-menu"></nav>
+        </div>
     </header>
 
     <!-- ========================================================= -->
     <!-- SECCIÓN ESTADÍSTICAS / GRÁFICO -->
     <!-- ========================================================= -->
+    <section id="stats"></section>
 
-
-
-
+    <!-- Gráfico -->
+    <section id="chart-container">
+        <canvas id="ageChart"></canvas>
+    </section>
 
     <!-- ========================================================= -->
     <!-- SECCIÓN PRINCIPAL DE LIBROS -->
     <!-- ========================================================= -->
 
-     <main>
+    <main>
         <div id="app"></div>
     </main>
 
@@ -50,5 +53,6 @@
     <!-- ========================================================= -->
     
     <script type="module" src="js/main.js" defer></script>
+    
 </body>    
 </html>
