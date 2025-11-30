@@ -1,9 +1,9 @@
 import { InterfaceService } from "./services/interfaceService.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const ui = new InterfaceService();
+    const UI = new InterfaceService();
+    await UI.loadInitialBooks();
 
-  await ui.loadInitialBooks(); // Carga inicial
 
   // Delegación de eventos para ver detalles
   document.addEventListener("click", (e) => {
@@ -11,6 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!card) return;
 
     const bookId = card.dataset.id;
-    ui.showBookDetail(bookId);
+    UI.showBookDetail(bookId);
   });
 });

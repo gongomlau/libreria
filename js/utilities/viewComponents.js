@@ -1,25 +1,33 @@
+import { AGE_RANGES } from "../data/rangoEdad.js";
+// ======================================================
+// UTILIDAD: Generar etiquetas de rango de edad
+// ======================================================
+
+function renderAgeTags(book) {
+  return book.ageRanges
+    .map((id) => {
+      const r = AGE_RANGES.find((a) => a.id === id);
+      return `<span class="age-tag age-${id}">${r.id}</span>`;
+    })
+    .join("");
+}
+
+
 // ======================================================
 // --- Componente tarjeta de libro ---
 // ======================================================
 
 export function bookCardComponent(book) {
+  const tags = book.ageRanges
+    .map((r) => `<span class="age-tag age-${r.replace("-", "")}">${r}</span>`)
+    .join("");
 
   return `
         <div class="book-card" data-id="${book.id}">
             <img src="${book.coverSmall}">
             <h3>${book.title}</h3>
             <p>${book.author}</p>
-          <div class="age-tags">
-            ${
-              book.ageRanges.length > 0
-                ? book.ageRanges
-                    .map(
-                      (r) => `<span class="age-tag ${r.color}">${r.id}</span>`
-                    )
-                    .join("")
-                : `<span class="age-tag none">N/A</span>`
-            }
-        </div>
+            <div class="age-tags">${renderAgeTags(book)}</div>
         </div>
     `;
 }
@@ -43,12 +51,21 @@ export function renderBookList(app, books) {
 
 export function renderBookDetail(app, book) {
   const div = document.getElementById(app);
+  if (!div) {
+    console.error(`No se encontró el contenedor con id="${app}"`);
+    return;
+  }
+
   div.innerHTML = `
         <div class="book-detail">
-            <img src="${book.coverLarge}">
+            <img src="${book.coverLarge}" alt="Cover of ${book.title}">
             <h2>${book.title}</h2>
             <h4>${book.author}</h4>
+            <p> Páginas: ${book.pages}</p>
             <p>${book.description || "No hay descripción disponible."}</p>
+
+            <h5>Edad recomendada</h5>
+            <div class="age-tags">${renderAgeTags(book)}</div>
         </div>
     `;
 }

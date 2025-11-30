@@ -1,97 +1,63 @@
-import { Book } from "../models/book.js";
-import { renderBookDetail, renderBookList } from "../utilities/viewComponents.js";
+import { renderBookDetail, renderBookList, bookCardComponent } from "../utilities/viewComponents.js";
 import { AGE_RANGES } from "../data/rangoEdad.js"
-import { fetchBooksBySubject, fetchWorkEditions, getCover } from "./openLibraryService.js";
+import { fetchBooksBySubject, fetchWorkEditions, fetchWork, fetchAuthor } from "./openLibraryService.js";
+import { getBestEdition, mapToBook,  } from "../mappers/mapToBook.js";
 
-// ----------------------------------------------------------
-// Elegir la mejor edición (preferencia español)
-// ----------------------------------------------------------
-function getBestEdition(editions) {
-    if (!editions.length) return null;
-    const spanish = editions.find(ed =>
-        ed.languages?.some(l => l.key === "/languages/spa")
-    );
-    return spanish || editions[0];
-}
+export class InterfaceService {
+  constructor() {
+    this.container = document.getElementById("app");
+    this.currentBooks = [];
+  }
 
-// ----------------------------------------------------------
-// Convertir Work + Edition → Book
-// ----------------------------------------------------------
-function mapToBook(work, edition) {
-    const coverId = edition?.covers?.[0] || work.covers?.[0] || null;
+  // ----------------------------------------------------------
+  // CARGA INICIAL
+  // ----------------------------------------------------------
+  async loadInitialBooks() {
+    const subjects = AGE_RANGES.flatMap((r) => r.subjects);
 
-    const subjects = work.subjects ?? [];
+    for (const subject of subjects) {
+      const works = await fetchBooksBySubject(subject, 5);
 
-    const ageRanges = getAgeRangesFromSubjects(subjects);
+      for (const w of works) {
+        try {
+          const workData = await fetchWork(w.key);
+          const editions = await fetchWorkEditions(w.key, 10);
+          const bestEdition = getBestEdition(editions);
+          // autor
+          const authorKey = bestEdition?.authors?.[0]?.key || workData.authors?.[0]?.author?.key;
+          const author = authorKey
+            ? await fetchAuthor(authorKey)
+            : "Autor desconocido";
+          // mapear a book
+          const book = mapToBook(workData, editions, author, subject);
 
-    return new Book({
-        id: work.key.replace("/works/", ""),
-        title: edition?.title || work.title,
-        author: work?.authors?.[0]?.name || "Autor desconocido",
-        coverSmall: getCover(coverId, "M"),
-        coverLarge: getCover(coverId, "L"),
-        description:
-            edition?.description?.value ||
-            edition?.description ||
-            work.description?.value ||
-            null,
-        language: edition?.languages?.[0]?.key?.replace("/languages/", ""),
-        pages: edition?.number_of_pages || null,
-        subjects: work.subjects ?? [],
-        ageRanges,
-    });
-}
-
-// ----------------------------------------------------------
-// Rango de edad
-// ----------------------------------------------------------
-
-export function getAgeRangesFromSubjects(subjects) {
-  const result = [];
-
-  for (const range of AGE_RANGES) {
-    if (range.subjects.some((s) => subjects.includes(s))) {
-      result.push({
-        id: range.id,
-        label: range.label,
-        color: range.color,
-      });
+          // evitar duplicados
+          if (!this.currentBooks.some((b) => b.id === book.id)) {
+            this.currentBooks.push(book);
+            renderBookList("app", this.currentBooks);
+          }
+        } catch (err) {
+          console.warn("Error procesando work", w.key, err);
+        }
+      }
     }
   }
 
-  return result;
-}
-export class InterfaceService {
-    constructor() {
-        this.containerId = "app";
-        this.currentBooks = [];
-    }
-  
-    // ----------------------------------------------------------
-    // CARGA INICIAL
-    // ----------------------------------------------------------
-    async loadInitialBooks() {
-            const allSubjects = AGE_RANGES.flatMap(r => r.subjects);
-            const allBooks = [];
+  //-----------------------------------------------------------
+  // AÑADIR UN LIBRO AL LISTADO
+  //-----------------------------------------------------------
+  appendBookToList(book) {
+    const html = bookCardComponent(book);
+    this.container.insertAdjacentHTML("beforeend", html);
+  }
 
-            for (const subject of allSubjects) {
-                const works = await fetchBooksBySubject(subject, 10);
+  //-----------------------------------------------------------
+  // MOSTRAR DETALLE DE LIBRO
+  //-----------------------------------------------------------
+  async showBookDetail(id) {
+    const book = this.currentBooks.find((b) => b.id === id);
+    if (!book) return;
 
-                for (const work of works) {
-                    const editions = await fetchWorkEditions(work.key);
-                    const bestEdition = getBestEdition(editions);
-                    const book = mapToBook(work, bestEdition);
-                    allBooks.push(book);
-                }
-            }
-
-            this.currentBooks = allBooks;
-            renderBookList(this.containerId, allBooks);
-    }
-
-    showBookDetail(id) {
-        const book = this.currentBooks.find(b => b.id === id);
-        if (!book) return;
-        renderBookDetail(this.containerId, book);
-    }
+    renderBookDetail("app", book);
+  }
 }
